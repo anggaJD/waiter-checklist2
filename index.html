@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Opening Checklist - Waiter</title>
+<title>Waiter Daily Checklist</title>
 
 <style>
 body {
@@ -13,9 +13,9 @@ body {
 }
 
 .container {
-    max-width: 750px;
+    max-width: 800px;
     margin: auto;
-    background: #ffffff;
+    background: white;
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
@@ -23,20 +23,25 @@ body {
 
 h1 {
     text-align: center;
-    margin-bottom: 5px;
 }
 
-.date {
+.tab-buttons {
     text-align: center;
     margin-bottom: 20px;
-    font-size: 14px;
-    color: #555;
 }
 
-.section-title {
-    margin-top: 25px;
-    font-weight: bold;
-    font-size: 16px;
+.tab-buttons button {
+    padding: 10px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #2e7d32;
+    color: white;
+}
+
+.tab-buttons button.active {
+    background: #1b5e20;
 }
 
 .checklist-item {
@@ -59,35 +64,6 @@ h1 {
     font-size: 12px;
 }
 
-.signature-box {
-    margin-top: 25px;
-}
-
-input[type="text"] {
-    padding: 6px;
-    width: 100%;
-    margin-top: 5px;
-}
-
-button {
-    margin-top: 20px;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.reset {
-    background: #c62828;
-    color: white;
-}
-
-.footer {
-    margin-top: 15px;
-    text-align: center;
-    font-size: 12px;
-    color: gray;
-}
 </style>
 </head>
 
@@ -95,8 +71,12 @@ button {
 
 <div class="container">
 
-<h1>Opening Checklist – Waiter</h1>
-<div class="date" id="currentDate"></div>
+<h1>Waiter Daily Checklist</h1>
+
+<div class="tab-buttons">
+    <button onclick="showOpening()" id="openBtn" class="active">Opening</button>
+    <button onclick="showClosing()" id="closeBtn">Closing</button>
+</div>
 
 <div id="checklist"></div>
 
@@ -104,109 +84,94 @@ button {
     <div class="progress-bar" id="progressBar">0%</div>
 </div>
 
-<div class="signature-box">
-    <label>Waiter Name:</label>
-    <input type="text" id="waiterName" placeholder="Type your name here">
-    
-    <label style="margin-top:10px; display:block;">Supervisor Name:</label>
-    <input type="text" id="supervisorName" placeholder="Supervisor approval">
-</div>
-
-<button class="reset" onclick="resetChecklist()">Reset Checklist</button>
-
-<div class="footer">
-Offline Mode | Auto Save Enabled
-</div>
-
 </div>
 
 <script>
 
-const tasks = [
+const openingTasks = [
 "Turn on ESB computer & Start Day on POS",
 "Turn on EDC machine & other cashier equipment",
 "Check paper roll and test print EDC & POS",
 "Turn on AC & all outlet lighting",
-"Sun-dry and water all plants",
 "Prepare indoor & outdoor dining area",
-"Fold cleaning cloths & sun-dry again if not fully dry",
-"Sweep & mop all areas",
-"Wipe tables & arrange table and chair layout",
-"Repolish cutlery (make sure no fingerprints)",
+"Repolish cutlery",
 "Set up plates & cutlery",
-"Adjust main dining calendar/date display",
-"Check all condiments, tissues & stock supplies",
-"Update bar & kitchen stock",
-"Return plants to original position (10:30)",
-"Clean glass doors & windows",
-"Spray insect repellent & air freshener",
-"Set playlist & adjust outlet music volume (10:50)",
-"Assign station & double-check everything (10:50)",
-"Ready to rock! (10:55)"
+"Check all condiments & supplies",
+"Assign station & double-check everything"
 ];
 
-const checklistDiv = document.getElementById("checklist");
-const progressBar = document.getElementById("progressBar");
+const closingTasks = [
+"Close POS & End Day",
+"Turn off EDC & cashier equipment",
+"Clean dining area",
+"Sweep & mop all areas",
+"Repolish & store cutlery",
+"Return all items to proper place",
+"Turn off AC & lights",
+"Take out trash",
+"Final outlet inspection"
+];
 
-function loadChecklist() {
+let currentMode = "opening";
+
+function renderChecklist() {
+    const checklistDiv = document.getElementById("checklist");
+    const tasks = currentMode === "opening" ? openingTasks : closingTasks;
     checklistDiv.innerHTML = "";
+
     tasks.forEach((task, index) => {
-        const checked = localStorage.getItem("task_" + index) === "true";
+        const key = currentMode + "_" + index;
+        const checked = localStorage.getItem(key) === "true";
         checklistDiv.innerHTML += `
             <div class="checklist-item">
-                <input type="checkbox" 
-                ${checked ? "checked" : ""} 
-                onchange="saveTask(${index}, this.checked)">
+                <input type="checkbox"
+                ${checked ? "checked" : ""}
+                onchange="saveTask('${key}', this.checked)">
                 ${task}
             </div>
         `;
     });
+
     updateProgress();
 }
 
-function saveTask(index, value) {
-    localStorage.setItem("task_" + index, value);
+function saveTask(key, value) {
+    localStorage.setItem(key, value);
     updateProgress();
 }
 
 function updateProgress() {
+    const tasks = currentMode === "opening" ? openingTasks : closingTasks;
     let completed = 0;
+
     tasks.forEach((_, index) => {
-        if (localStorage.getItem("task_" + index) === "true") {
+        const key = currentMode + "_" + index;
+        if (localStorage.getItem(key) === "true") {
             completed++;
         }
     });
+
     const percent = Math.round((completed / tasks.length) * 100);
+    const progressBar = document.getElementById("progressBar");
     progressBar.style.width = percent + "%";
     progressBar.textContent = percent + "%";
 }
 
-function resetChecklist() {
-    tasks.forEach((_, index) => {
-        localStorage.removeItem("task_" + index);
-    });
-    localStorage.removeItem("waiterName");
-    localStorage.removeItem("supervisorName");
-    document.getElementById("waiterName").value = "";
-    document.getElementById("supervisorName").value = "";
-    loadChecklist();
+function showOpening() {
+    currentMode = "opening";
+    document.getElementById("openBtn").classList.add("active");
+    document.getElementById("closeBtn").classList.remove("active");
+    renderChecklist();
 }
 
-document.getElementById("waiterName").addEventListener("input", function() {
-    localStorage.setItem("waiterName", this.value);
-});
+function showClosing() {
+    currentMode = "closing";
+    document.getElementById("closeBtn").classList.add("active");
+    document.getElementById("openBtn").classList.remove("active");
+    renderChecklist();
+}
 
-document.getElementById("supervisorName").addEventListener("input", function() {
-    localStorage.setItem("supervisorName", this.value);
-});
-
-document.getElementById("waiterName").value = localStorage.getItem("waiterName") || "";
-document.getElementById("supervisorName").value = localStorage.getItem("supervisorName") || "";
-
-document.getElementById("currentDate").textContent = 
-new Date().toLocaleDateString();
-
-loadChecklist();
+renderChecklist();
 
 </script>
 
